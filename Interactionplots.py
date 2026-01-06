@@ -3,10 +3,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import io
 
-# ---------------------------------------------------------
-# 1. 数据加载 (如果您有本地文件，请修改 pd.read_csv 的路径)
-# 这里为了演示，我直接使用刚才的字符串数据
-# ---------------------------------------------------------
 csv_content = """时间戳记,Age,vocal type,Select the task,Name (first and second),How mentally demanding was the task?,How physically demanding was the task?,How hurried or rushed was the pace of the task?,How successful were you in accomplishing what you were asked to do?,How hard did you have to work to accomplish your level of performance?,"How insecure, discouraged, irritated, stressed, and annoyed were you?"
 2025-12-5 上午10:22:10,25,soft,Digital span memory test,David Masson,4,1,3,3,4,2
 2025-12-5 上午10:26:36,25,soft,Symbol search,David Masson,4,1,4,3,4,3
@@ -63,24 +59,15 @@ csv_content = """时间戳记,Age,vocal type,Select the task,Name (first and sec
 2025-12-9 下午01:21:24,24,hard,Digital span memory test,Kimmy Karlsson Kochar,5,1,4,2,5,3
 2025-12-9 下午01:21:29,23,hard,Digital span memory test,Jiwoo Lee,3,1,3,2,3,2"""
 
-# 读取数据
 df = pd.read_csv(io.StringIO(csv_content))
 
-# 给列重命名（处理原始的长问题名）
 df.columns = ["Timestamp", "Age", "VocalType", "Task", "Name", 
               "Mental", "Physical", "Temporal", "Success", "Effort", "Frustration"]
 
-# ---------------------------------------------------------
-# 2. 数据预处理
-# ---------------------------------------------------------
-# 反转 'Success' 分数，因为 NASA-TLX 中高分通常代表高负荷
-# 原始问题是 "How successful were you?" (1=Low success?, 5=High success?)
-# 通常 NASA-TLX 都是问 "How Insecure/Discouraged?" (High=Bad).
-# 假设 5=非常成功(低负荷)，1=非常失败(高负荷)。
-# 为了和其他指标（High=High Workload）一致，我们将其反转为 "Perceived Failure"
+
 df['Perceived Failure'] = 6 - df['Success'] 
 
-# 重命名列以方便绘图显示
+
 plot_df = df.rename(columns={
     "Mental": "Mental Demand",
     "Physical": "Physical Demand",
@@ -89,54 +76,50 @@ plot_df = df.rename(columns={
     "Frustration": "Frustration"
 })
 
-# 定义要画的 6 个维度
+
 dimensions = ["Mental Demand", "Physical Demand", "Temporal Demand", 
               "Perceived Failure", "Effort", "Frustration"]
 
-# ---------------------------------------------------------
-# 3. 绘图 (Interaction Plots)
-# ---------------------------------------------------------
-# 设置 Seaborn 风格
+
+
 sns.set(style="whitegrid")
 
-# 创建画布：2行3列
 fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-axes = axes.flatten() # 展平数组方便循环
+axes = axes.flatten() 
 
-# 颜色设置：Hard=红色, Soft=蓝色
 palette = {"hard": "#e74c3c", "soft": "#3498db"}
 
 for i, dim in enumerate(dimensions):
-    # 使用 pointplot 绘制交互图
-    # x轴: 任务类型, y轴: 维度分数, hue: 声音类型
+   
     sns.pointplot(data=plot_df, x="Task", y=dim, hue="VocalType", 
-                  markers=["o", "s"],       # 圆点和方块
-                  linestyles=["-", "--"],   # 实线和虚线
-                  capsize=.1,               # 误差棒帽子大小
-                  errorbar="se",            # 误差棒显示标准误
+                  markers=["o", "s"],      
+                  linestyles=["-", "--"],   
+                  capsize=.1,               
+                  errorbar="se",            
                   ax=axes[i], 
                   palette=palette,
-                  dodge=True)               #稍微错开一点，防止重叠
+                  dodge=True)             
     
-    # 图表美化
-    axes[i].set_title(dim, fontsize=14, fontweight='bold')
-    axes[i].set_xlabel("")      # 去掉X轴标签，因为大家都知道是任务
-    axes[i].set_ylabel("Score (1-5)")
-    axes[i].set_ylim(0.5, 5.5)  # 固定Y轴范围，方便对比
 
-    # 图例控制：只在第一个图显示图例，其他的关掉
+    axes[i].set_title(dim, fontsize=14, fontweight='bold')
+    axes[i].set_xlabel("")      
+    axes[i].set_ylabel("Score (1-5)")
+    axes[i].set_ylim(0.5, 5.5)  
+
+    
     if i == 0:
         axes[i].legend(title="Vocal Type", loc='upper left')
     else:
         axes[i].get_legend().remove()
 
-# 自动调整布局，防止重叠
+
 plt.tight_layout()
 
-# 保存图片
+
 plt.savefig('interaction_plots_six_dimensions.png', dpi=300)
 
-# 显示图片
+
 plt.show()
+
 
 print("图表已生成并保存为 'interaction_plots_six_dimensions.png'")
